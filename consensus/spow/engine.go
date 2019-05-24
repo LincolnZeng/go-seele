@@ -614,15 +614,23 @@ func getMiningPDATarget(header *types.BlockHeader, reader consensus.ChainReader)
 	currentCreator := header.Creator
 	parent := reader.GetHeaderByHash(header.PreviousBlockHash)
 	previousCreator := parent.Creator
-
+	interval := header.CreateTimestamp.Uint64() - parent.CreateTimestamp.Uint64()
+	// if the interval btw parent and current is large than 120s, then PDA diff keep unchange.
+	if interval > uint64(120) {
+		return target
+	}
+	// if current block and the parent block are the same creator, then PDA diff this creator
 	if currentCreator == previousCreator {
 		target = new(big.Int).Mul(target, PDAFactor)
 	}
+	// if target larger than the max, set the max as target
 	if target.Cmp(maxDet30x30) > 0 {
 		return maxDet30x30
 	}
 	// fmt.Println("Difficulty: ", header.Difficulty)
 	// fmt.Println("Target: ", target)
+
+	// normal target
 	return target
 }
 
